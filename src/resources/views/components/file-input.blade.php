@@ -1,5 +1,5 @@
 @props(['id', 'wireModel', 'accept' => null, 'label' => 'Choose file', 'multiple' => false])
-<div x-data="{ fileName: '', uploading: false, progress: 0 }">
+<div x-data="{ fileName: '', uploading: false, progress: 0, error: '' }">
     <label
         for="{{ $id }}"
         class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition"
@@ -14,11 +14,12 @@
         type="file"
         @if ($accept) accept="{{ $accept }}" @endif
         @if ($multiple) multiple @endif
-        x-on:change="fileName = $event.target.files.length > 1 ? $event.target.files.length + ' files selected' : ($event.target.files[0]?.name ?? '')"
-        x-on:livewire-upload-start="uploading = true; progress = 0"
+        x-on:change="fileName = $event.target.files.length > 1 ? $event.target.files.length + ' files selected' : ($event.target.files[0]?.name ?? ''); error = ''"
+        x-on:livewire-upload-start="uploading = true; progress = 0; error = ''"
         x-on:livewire-upload-finish="uploading = false"
-        x-on:livewire-upload-error="uploading = false"
+        x-on:livewire-upload-error="uploading = false; error = @js(__('Upload failed — the file(s) may be too large or the connection dropped. Try again.'))"
         x-on:livewire-upload-progress="progress = $event.detail.progress"
         class="sr-only"
     >
+    <p x-show="error" x-cloak x-text="error" class="mt-1 text-sm text-red-600 dark:text-red-400"></p>
 </div>

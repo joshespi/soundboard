@@ -27,3 +27,4 @@ src/_ide_helper.php
 src/Homestead.json
 src/Homestead.yaml
 Thumbs.db
+db_data/
