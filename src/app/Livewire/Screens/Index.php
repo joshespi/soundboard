@@ -4,6 +4,7 @@ namespace App\Livewire\Screens;
 
 use App\Models\Screen;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Rule;
 use Livewire\Component;
 
@@ -34,8 +35,10 @@ class Index extends Component
     {
         $this->authorize('delete', $screen);
 
-        $screen->sounds->each->delete();
-        $screen->delete();
+        DB::transaction(function () use ($screen) {
+            $screen->sounds->each->delete();
+            $screen->delete();
+        });
     }
 
     public function render()

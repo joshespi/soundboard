@@ -57,6 +57,29 @@
         </form>
     </div>
 
+    <div class="p-4 sm:p-5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+        <h3 class="font-semibold text-gray-900 dark:text-gray-100 mb-4">{{ __('Shared library') }}</h3>
+
+        <x-text-input wire:model.live.debounce.300ms="librarySearch" type="text" class="block w-full mb-4" placeholder="{{ __('Search the shared library...') }}" />
+
+        @if ($librarySounds->isEmpty())
+            <p class="text-gray-500 dark:text-gray-400 text-sm">{{ __('Nothing in the shared library yet.') }}</p>
+        @else
+            <ul class="space-y-2">
+                @foreach ($librarySounds as $librarySound)
+                    <li wire:key="library-sound-{{ $librarySound->id }}" class="flex items-center gap-3 p-3 rounded-xl border border-gray-200 dark:border-gray-700">
+                        <x-sound-icon :sound="$librarySound" class="w-12 h-12 text-2xl rounded-lg bg-gray-100 dark:bg-gray-700 shrink-0" />
+                        <x-play-button :src="$librarySound->url" />
+                        <p class="flex-1 min-w-0 font-medium text-gray-900 dark:text-gray-100 truncate">{{ $librarySound->name }}</p>
+                        <x-secondary-button type="button" wire:click="addFromLibrary({{ $librarySound->id }})" wire:loading.attr="disabled" wire:target="addFromLibrary({{ $librarySound->id }})" class="shrink-0">
+                            {{ __('Add to screen') }}
+                        </x-secondary-button>
+                    </li>
+                @endforeach
+            </ul>
+        @endif
+    </div>
+
     <div>
         <h3 class="font-semibold text-gray-900 dark:text-gray-100 mb-3">{{ __('Sounds') }}</h3>
 
@@ -108,18 +131,18 @@
                                 <x-play-button :src="$sound->url" />
                                 <p class="flex-1 min-w-0 font-medium text-gray-900 dark:text-gray-100 truncate">{{ $sound->name }}</p>
                                 <div class="flex items-center gap-0.5 shrink-0">
-                                    <button wire:click="startEditSound({{ $sound->id }})" class="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="{{ __('Edit') }}">
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4"><path d="M13.586 3.586a2 2 0 1 1 2.828 2.828l-.793.793-2.828-2.828.793-.793ZM11.379 5.793 3 14.172V17h2.828l8.38-8.379-2.83-2.828Z" /></svg>
-                                    </button>
+                                    <x-icon-button wire:click="startEditSound({{ $sound->id }})" :label="__('Edit')">
+                                        <x-icon.edit />
+                                    </x-icon-button>
                                     <button wire:click="move({{ $sound->id }}, -1)" class="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="{{ __('Move up') }}">
                                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4"><path fill-rule="evenodd" d="M10 3a.75.75 0 0 1 .53.22l5.5 5.5a.75.75 0 1 1-1.06 1.06L10.75 5.56v10.69a.75.75 0 0 1-1.5 0V5.56L5.03 9.78a.75.75 0 0 1-1.06-1.06l5.5-5.5A.75.75 0 0 1 10 3Z" clip-rule="evenodd" /></svg>
                                     </button>
                                     <button wire:click="move({{ $sound->id }}, 1)" class="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="{{ __('Move down') }}">
                                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4"><path fill-rule="evenodd" d="M10 17a.75.75 0 0 1-.53-.22l-5.5-5.5a.75.75 0 1 1 1.06-1.06l4.22 4.22V3.75a.75.75 0 0 1 1.5 0v10.69l4.22-4.22a.75.75 0 1 1 1.06 1.06l-5.5 5.5A.75.75 0 0 1 10 17Z" clip-rule="evenodd" /></svg>
                                     </button>
-                                    <button wire:click="deleteSound({{ $sound->id }})" wire:confirm="{{ __('Delete this sound?') }}" class="p-2 rounded-lg text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-950" aria-label="{{ __('Delete') }}">
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4"><path fill-rule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.52.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l.3-7.5Z" clip-rule="evenodd" /></svg>
-                                    </button>
+                                    <x-icon-button variant="danger" wire:click="deleteSound({{ $sound->id }})" wire:confirm="{{ __('Delete this sound?') }}" :label="__('Delete')">
+                                        <x-icon.trash />
+                                    </x-icon-button>
                                 </div>
                             </div>
                         @endif

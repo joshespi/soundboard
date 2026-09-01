@@ -3,6 +3,7 @@
 namespace Tests\Feature\Screens;
 
 use App\Livewire\Screens\Manage;
+use App\Models\LibrarySound;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -113,5 +114,42 @@ class ManageTest extends TestCase
 
         $this->assertNull($sound->image_path);
         Storage::disk('public')->assertMissing($image);
+    }
+
+    public function test_owner_can_add_a_library_sound_to_their_screen_as_an_independent_copy(): void
+    {
+        Storage::fake('public');
+
+        $user = User::factory()->create();
+        $screen = $user->screens()->create(['name' => 'Test Screen', 'sort_order' => 0]);
+        Storage::disk('public')->put('library-sounds/boop.mp3', 'fake-audio');
+        Storage::disk('public')->put('library-sounds/images/boop.png', 'fake-image');
+        $librarySound = LibrarySound::create([
+            'name' => 'Boop',
+            'emoji' => '🎵',
+            'color' => '#123456',
+            'file_path' => 'library-sounds/boop.mp3',
+            'image_path' => 'library-sounds/images/boop.png',
+            'sort_order' => 0,
+        ]);
+
+        Livewire::actingAs($user)
+            ->test(Manage::class, ['screen' => $screen])
+            ->call('addFromLibrary', $librarySound);
+
+        $sound = $screen->sounds()->firstOrFail();
+
+        $this->assertSame('Boop', $sound->name);
+        $this->assertSame('🎵', $sound->emoji);
+        $this->assertSame('#123456', $sound->color);
+        $this->assertNotSame($librarySound->file_path, $sound->file_path);
+        $this->assertNotSame($librarySound->image_path, $sound->image_path);
+        Storage::disk('public')->assertExists($sound->file_path);
+        Storage::disk('public')->assertExists($sound->image_path);
+
+        // Deleting the library original must not affect the user's independent copy.
+        $librarySound->delete();
+        Storage::disk('public')->assertExists($sound->file_path);
+        Storage::disk('public')->assertExists($sound->image_path);
     }
 }

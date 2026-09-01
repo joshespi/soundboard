@@ -2,12 +2,20 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasStoredFile;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Facades\Storage;
 
 class Sound extends Model
 {
+    use HasStoredFile;
+
+    const IMAGE_RULES = 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:4096';
+
+    const AUDIO_RULES = 'nullable|file|mimes:mp3,wav,ogg,m4a,aac|max:20480';
+
+    const EMOJI_RULES = 'nullable|string|max:8';
+
     protected $fillable = [
         'name',
         'emoji',
@@ -17,29 +25,8 @@ class Sound extends Model
         'sort_order',
     ];
 
-    protected static function booted(): void
-    {
-        static::deleting(function (Sound $sound) {
-            Storage::disk('public')->delete($sound->file_path);
-
-            if ($sound->image_path) {
-                Storage::disk('public')->delete($sound->image_path);
-            }
-        });
-    }
-
     public function screen(): BelongsTo
     {
         return $this->belongsTo(Screen::class);
-    }
-
-    public function getUrlAttribute(): string
-    {
-        return Storage::disk('public')->url($this->file_path);
-    }
-
-    public function getImageUrlAttribute(): ?string
-    {
-        return $this->image_path ? Storage::disk('public')->url($this->image_path) : null;
     }
 }

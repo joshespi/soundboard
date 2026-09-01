@@ -2,9 +2,11 @@
 
 namespace App\Livewire\Screens;
 
+use App\Models\LibrarySound;
 use App\Models\Screen;
 use App\Models\Sound;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
@@ -15,24 +17,20 @@ class Manage extends Component
 {
     use WithFileUploads;
 
-    const IMAGE_RULES = 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:4096';
-
-    const EMOJI_RULES = 'nullable|string|max:8';
-
     public Screen $screen;
 
     public string $name = '';
 
-    #[Validate('nullable|file|mimes:mp3,wav,ogg,m4a,aac|max:20480')]
+    #[Validate(Sound::AUDIO_RULES)]
     public $newSound = null;
 
     #[Validate('nullable|string|max:255')]
     public string $newSoundName = '';
 
-    #[Validate(self::EMOJI_RULES)]
+    #[Validate(Sound::EMOJI_RULES)]
     public string $newSoundEmoji = '';
 
-    #[Validate(self::IMAGE_RULES)]
+    #[Validate(Sound::IMAGE_RULES)]
     public $newSoundImage = null;
 
     public ?int $editingSoundId = null;
@@ -41,10 +39,12 @@ class Manage extends Component
 
     public string $editEmoji = '';
 
-    #[Validate(self::IMAGE_RULES)]
+    #[Validate(Sound::IMAGE_RULES)]
     public $editImage = null;
 
     public bool $editRemoveImage = false;
+
+    public string $librarySearch = '';
 
     public function mount(Screen $screen): void
     {
@@ -92,6 +92,23 @@ class Manage extends Component
         $sound->delete();
     }
 
+    public function addFromLibrary(LibrarySound $librarySound): void
+    {
+        $path = $this->copyIntoScreen($librarySound->file_path, $this->soundPath());
+        $imagePath = $librarySound->image_path
+            ? $this->copyIntoScreen($librarySound->image_path, $this->soundPath('images'))
+            : null;
+
+        $this->screen->sounds()->create([
+            'name' => $librarySound->name,
+            'emoji' => $librarySound->emoji,
+            'color' => $librarySound->color,
+            'image_path' => $imagePath,
+            'file_path' => $path,
+            'sort_order' => ($this->screen->sounds()->max('sort_order') ?? -1) + 1,
+        ]);
+    }
+
     public function move(Sound $sound, int $direction): void
     {
         $this->authorize('update', $sound);
@@ -137,8 +154,8 @@ class Manage extends Component
 
         $this->validate([
             'editName' => Screen::NAME_RULES,
-            'editEmoji' => self::EMOJI_RULES,
-            'editImage' => self::IMAGE_RULES,
+            'editEmoji' => Sound::EMOJI_RULES,
+            'editImage' => Sound::IMAGE_RULES,
         ]);
 
         $imagePath = $sound->image_path;
@@ -167,11 +184,24 @@ class Manage extends Component
     {
         return view('livewire.screens.manage', [
             'sounds' => $this->screen->sounds()->get(),
+            'librarySounds' => LibrarySound::query()
+                ->when($this->librarySearch !== '', fn ($query) => $query->where('name', 'like', '%'.$this->librarySearch.'%'))
+                ->orderBy('sort_order')
+                ->get(),
         ]);
     }
 
     private function soundPath(string $sub = ''): string
     {
-        return 'sounds/' . $this->screen->user_id . ($sub !== '' ? '/' . $sub : '');
+        return 'sounds/'.$this->screen->user_id.($sub !== '' ? '/'.$sub : '');
+    }
+
+    private function copyIntoScreen(string $sourcePath, string $directory): string
+    {
+        $extension = pathinfo($sourcePath, PATHINFO_EXTENSION);
+        $path = $directory.'/'.Str::random(40).'.'.$extension;
+        Storage::disk('public')->copy($sourcePath, $path);
+
+        return $path;
     }
 }

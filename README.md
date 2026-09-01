@@ -39,6 +39,14 @@ Edit `.env`, then `docker compose up -d --build` as above.
 4. **Start** — `scripts/deploy.sh` (same script as local run above). Migrations/seeding/caching run automatically on container start.
 5. **Data persists** — DB and uploads live in named volumes (`db_data`, `storage_uploads`), safe across `down`/rebuild (without `-v`).
 
+## Admin panel
+
+`/admin` — dashboard/usage stats, all users' sounds (search + delete), user list (delete, cascades their screens/sounds), and a shared sound library any user can add from into their own screens. Gated by an `is_admin` flag on `users`, `false` by default; no UI to grant it yet, so promote an account via tinker:
+
+```bash
+docker compose exec app php artisan tinker --execute="App\Models\User::where('email', 'you@example.com')->update(['is_admin' => true]);"
+```
+
 ## Backup / restore
 
 ```bash
@@ -63,7 +71,7 @@ Installable PWA — "Add to Home Screen" or a desktop browser's install icon. On
 
 ## Known gaps
 
-- No admin controls or user removal UI.
-- No sharing between users.
+- No UI to grant/revoke the admin flag — tinker only (see Admin panel above).
+- No sharing between users' screens (the admin-curated library is one-way: admin → user).
 - Upload limits: 20MB/sound, 4MB/tile image (`Manage.php`, `docker/php/php.ini`, `docker/nginx/default.conf`).
 - No CAPTCHA/bot protection on registration.
