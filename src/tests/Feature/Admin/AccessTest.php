@@ -39,9 +39,7 @@ class AccessTest extends TestCase
     #[DataProvider('adminRoutes')]
     public function test_admin_can_view_admin_pages(string $route): void
     {
-        $admin = User::factory()->create();
-        $admin->is_admin = true;
-        $admin->save();
+        $admin = User::factory()->admin()->create();
 
         $this->actingAs($admin)
             ->get(route($route))

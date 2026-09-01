@@ -13,15 +13,6 @@ class ContentTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function admin(): User
-    {
-        $admin = User::factory()->create();
-        $admin->is_admin = true;
-        $admin->save();
-
-        return $admin;
-    }
-
     public function test_admin_can_see_another_users_sound(): void
     {
         $owner = User::factory()->create();
@@ -32,7 +23,7 @@ class ContentTest extends TestCase
             'sort_order' => 0,
         ]);
 
-        $this->actingAs($this->admin())
+        $this->actingAs(User::factory()->admin()->create())
             ->get(route('admin.content'))
             ->assertOk()
             ->assertSee('Naughty Sound')
@@ -53,7 +44,7 @@ class ContentTest extends TestCase
             'sort_order' => 0,
         ]);
 
-        Livewire::actingAs($this->admin())
+        Livewire::actingAs(User::factory()->admin()->create())
             ->test(Content::class)
             ->call('deleteSound', $sound);
 

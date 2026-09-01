@@ -1,4 +1,4 @@
-@props(['id', 'wireModel', 'accept' => null, 'label' => 'Choose file'])
+@props(['id', 'wireModel', 'accept' => null, 'label' => 'Choose file', 'multiple' => false])
 <div x-data="{ fileName: '' }">
     <label
         for="{{ $id }}"
@@ -12,7 +12,8 @@
         id="{{ $id }}"
         type="file"
         @if ($accept) accept="{{ $accept }}" @endif
-        x-on:change="fileName = $event.target.files[0]?.name ?? ''"
+        @if ($multiple) multiple @endif
+        x-on:change="fileName = $event.target.files.length > 1 ? $event.target.files.length + ' files selected' : ($event.target.files[0]?.name ?? '')"
         class="sr-only"
     >
 </div>

@@ -13,15 +13,6 @@ class UsersTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function admin(): User
-    {
-        $admin = User::factory()->create();
-        $admin->is_admin = true;
-        $admin->save();
-
-        return $admin;
-    }
-
     public function test_admin_can_delete_a_user_and_their_files_are_cleaned_up(): void
     {
         Storage::fake('public');
@@ -39,7 +30,7 @@ class UsersTest extends TestCase
             'sort_order' => 0,
         ]);
 
-        Livewire::actingAs($this->admin())
+        Livewire::actingAs(User::factory()->admin()->create())
             ->test(Users::class)
             ->call('deleteUser', $user);
 
@@ -51,7 +42,7 @@ class UsersTest extends TestCase
 
     public function test_admin_cannot_delete_their_own_account_from_here(): void
     {
-        $admin = $this->admin();
+        $admin = User::factory()->admin()->create();
 
         Livewire::actingAs($admin)
             ->test(Users::class)

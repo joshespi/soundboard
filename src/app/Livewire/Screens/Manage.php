@@ -2,47 +2,24 @@
 
 namespace App\Livewire\Screens;
 
+use App\Livewire\Concerns\HasEditableSoundForm;
 use App\Models\LibrarySound;
 use App\Models\Screen;
 use App\Models\Sound;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Layout;
-use Livewire\Attributes\Validate;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
 #[Layout('layouts.app')]
 class Manage extends Component
 {
-    use WithFileUploads;
+    use HasEditableSoundForm, WithFileUploads;
 
     public Screen $screen;
 
     public string $name = '';
-
-    #[Validate(Sound::AUDIO_RULES)]
-    public $newSound = null;
-
-    #[Validate('nullable|string|max:255')]
-    public string $newSoundName = '';
-
-    #[Validate(Sound::EMOJI_RULES)]
-    public string $newSoundEmoji = '';
-
-    #[Validate(Sound::IMAGE_RULES)]
-    public $newSoundImage = null;
-
-    public ?int $editingSoundId = null;
-
-    public string $editName = '';
-
-    public string $editEmoji = '';
-
-    #[Validate(Sound::IMAGE_RULES)]
-    public $editImage = null;
-
-    public bool $editRemoveImage = false;
 
     public string $librarySearch = '';
 
@@ -56,6 +33,8 @@ class Manage extends Component
 
     public function updateScreenName(): void
     {
+        $this->authorize('update', $this->screen);
+
         $this->validate(['name' => Screen::NAME_RULES]);
 
         $this->screen->update(['name' => $this->name]);
@@ -63,26 +42,19 @@ class Manage extends Component
 
     public function uploadSound(): void
     {
+        $this->authorize('update', $this->screen);
+
         $this->validate();
 
         if (! $this->newSound) {
             return;
         }
 
-        $path = $this->newSound->store($this->soundPath(), 'public');
-        $imagePath = $this->newSoundImage
-            ? $this->newSoundImage->store($this->soundPath('images'), 'public')
-            : null;
-
-        $this->screen->sounds()->create([
-            'name' => $this->newSoundName !== '' ? $this->newSoundName : pathinfo($this->newSound->getClientOriginalName(), PATHINFO_FILENAME),
-            'emoji' => $this->newSoundEmoji !== '' ? $this->newSoundEmoji : null,
-            'image_path' => $imagePath,
-            'file_path' => $path,
-            'sort_order' => ($this->screen->sounds()->max('sort_order') ?? -1) + 1,
+        $this->screen->sounds()->create($this->uploadedSoundAttributes($this->soundPath(), $this->soundPath('images')) + [
+            'sort_order' => $this->nextSortOrder($this->screen->sounds()),
         ]);
 
-        $this->reset('newSound', 'newSoundName', 'newSoundEmoji', 'newSoundImage');
+        $this->resetUploadForm();
     }
 
     public function deleteSound(Sound $sound): void
@@ -94,6 +66,8 @@ class Manage extends Component
 
     public function addFromLibrary(LibrarySound $librarySound): void
     {
+        $this->authorize('update', $this->screen);
+
         $path = $this->copyIntoScreen($librarySound->file_path, $this->soundPath());
         $imagePath = $librarySound->image_path
             ? $this->copyIntoScreen($librarySound->image_path, $this->soundPath('images'))
@@ -105,7 +79,7 @@ class Manage extends Component
             'color' => $librarySound->color,
             'image_path' => $imagePath,
             'file_path' => $path,
-            'sort_order' => ($this->screen->sounds()->max('sort_order') ?? -1) + 1,
+            'sort_order' => $this->nextSortOrder($this->screen->sounds()),
         ]);
     }
 
@@ -133,18 +107,7 @@ class Manage extends Component
     {
         $this->authorize('update', $sound);
 
-        $this->editingSoundId = $sound->id;
-        $this->editName = $sound->name;
-        $this->editEmoji = $sound->emoji ?? '';
-        $this->editImage = null;
-        $this->editRemoveImage = false;
-        $this->resetValidation();
-    }
-
-    public function cancelEditSound(): void
-    {
-        $this->reset('editingSoundId', 'editName', 'editEmoji', 'editImage', 'editRemoveImage');
-        $this->resetValidation();
+        $this->beginEditingSound($sound);
     }
 
     public function saveEditSound(): void
@@ -158,23 +121,10 @@ class Manage extends Component
             'editImage' => Sound::IMAGE_RULES,
         ]);
 
-        $imagePath = $sound->image_path;
-
-        if ($this->editImage) {
-            if ($imagePath) {
-                Storage::disk('public')->delete($imagePath);
-            }
-
-            $imagePath = $this->editImage->store($this->soundPath('images'), 'public');
-        } elseif ($this->editRemoveImage && $imagePath) {
-            Storage::disk('public')->delete($imagePath);
-            $imagePath = null;
-        }
-
         $sound->update([
             'name' => $this->editName,
             'emoji' => $this->editEmoji !== '' ? $this->editEmoji : null,
-            'image_path' => $imagePath,
+            'image_path' => $this->updatedImagePath($sound->image_path, $this->soundPath('images')),
         ]);
 
         $this->cancelEditSound();

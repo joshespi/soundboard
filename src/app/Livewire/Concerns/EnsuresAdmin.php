@@ -15,6 +15,6 @@ trait EnsuresAdmin
 {
     protected function ensureAdmin(): void
     {
-        abort_unless(Auth::user()?->is_admin, 403);
+        abort_unless(Auth::user()?->isAdmin(), 403);
     }
 }

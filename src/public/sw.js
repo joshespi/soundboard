@@ -8,6 +8,10 @@ function isCacheFirst(url) {
         || url.pathname === '/favicon.svg';
 }
 
+function isOfflinePlayablePage(url) {
+    return /^\/screens\/\d+\/play$/.test(url.pathname);
+}
+
 self.addEventListener('install', () => {
     self.skipWaiting();
 });
@@ -48,14 +52,14 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    if (request.mode === 'navigate') {
+    if (request.mode === 'navigate' && isOfflinePlayablePage(url)) {
         event.respondWith(
             fetch(request).then((response) => {
                 const copy = response.clone();
                 caches.open(CACHE).then((cache) => cache.put(request, copy));
 
                 return response;
-            }).catch(() => caches.match(request).then((cached) => cached || caches.match('/dashboard'))),
+            }).catch(() => caches.match(request)),
         );
     }
 });

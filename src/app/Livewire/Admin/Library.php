@@ -3,42 +3,44 @@
 namespace App\Livewire\Admin;
 
 use App\Livewire\Concerns\EnsuresAdmin;
+use App\Livewire\Concerns\HasEditableSoundForm;
 use App\Models\LibrarySound;
 use App\Models\Screen;
 use App\Models\Sound;
-use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Layout;
-use Livewire\Attributes\Validate;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
 #[Layout('layouts.app')]
 class Library extends Component
 {
-    use EnsuresAdmin, WithFileUploads;
+    use EnsuresAdmin, HasEditableSoundForm, WithFileUploads;
 
-    #[Validate(Sound::AUDIO_RULES)]
-    public $newSound = null;
+    /** @var \Livewire\Features\SupportFileUploads\TemporaryUploadedFile[] */
+    public array $massUpload = [];
 
-    #[Validate('nullable|string|max:255')]
-    public string $newSoundName = '';
+    public function uploadMassSounds(): void
+    {
+        $this->ensureAdmin();
 
-    #[Validate(Sound::EMOJI_RULES)]
-    public string $newSoundEmoji = '';
+        $this->validate(['massUpload.*' => Sound::AUDIO_RULES]);
 
-    #[Validate(Sound::IMAGE_RULES)]
-    public $newSoundImage = null;
+        if (empty($this->massUpload)) {
+            return;
+        }
 
-    public ?int $editingSoundId = null;
+        $sortOrder = LibrarySound::max('sort_order') ?? -1;
 
-    public string $editName = '';
+        foreach ($this->massUpload as $file) {
+            LibrarySound::create([
+                'name' => pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
+                'file_path' => $file->store('library-sounds', 'public'),
+                'sort_order' => ++$sortOrder,
+            ]);
+        }
 
-    public string $editEmoji = '';
-
-    #[Validate(Sound::IMAGE_RULES)]
-    public $editImage = null;
-
-    public bool $editRemoveImage = false;
+        $this->reset('massUpload');
+    }
 
     public function uploadSound(): void
     {
@@ -50,20 +52,11 @@ class Library extends Component
             return;
         }
 
-        $path = $this->newSound->store('library-sounds', 'public');
-        $imagePath = $this->newSoundImage
-            ? $this->newSoundImage->store('library-sounds/images', 'public')
-            : null;
-
-        LibrarySound::create([
-            'name' => $this->newSoundName !== '' ? $this->newSoundName : pathinfo($this->newSound->getClientOriginalName(), PATHINFO_FILENAME),
-            'emoji' => $this->newSoundEmoji !== '' ? $this->newSoundEmoji : null,
-            'image_path' => $imagePath,
-            'file_path' => $path,
-            'sort_order' => (LibrarySound::max('sort_order') ?? -1) + 1,
+        LibrarySound::create($this->uploadedSoundAttributes('library-sounds', 'library-sounds/images') + [
+            'sort_order' => $this->nextSortOrder(LibrarySound::query()),
         ]);
 
-        $this->reset('newSound', 'newSoundName', 'newSoundEmoji', 'newSoundImage');
+        $this->resetUploadForm();
     }
 
     public function deleteSound(LibrarySound $librarySound): void
@@ -75,18 +68,9 @@ class Library extends Component
 
     public function startEditSound(LibrarySound $librarySound): void
     {
-        $this->editingSoundId = $librarySound->id;
-        $this->editName = $librarySound->name;
-        $this->editEmoji = $librarySound->emoji ?? '';
-        $this->editImage = null;
-        $this->editRemoveImage = false;
-        $this->resetValidation();
-    }
+        $this->ensureAdmin();
 
-    public function cancelEditSound(): void
-    {
-        $this->reset('editingSoundId', 'editName', 'editEmoji', 'editImage', 'editRemoveImage');
-        $this->resetValidation();
+        $this->beginEditingSound($librarySound);
     }
 
     public function saveEditSound(): void
@@ -101,23 +85,10 @@ class Library extends Component
             'editImage' => Sound::IMAGE_RULES,
         ]);
 
-        $imagePath = $librarySound->image_path;
-
-        if ($this->editImage) {
-            if ($imagePath) {
-                Storage::disk('public')->delete($imagePath);
-            }
-
-            $imagePath = $this->editImage->store('library-sounds/images', 'public');
-        } elseif ($this->editRemoveImage && $imagePath) {
-            Storage::disk('public')->delete($imagePath);
-            $imagePath = null;
-        }
-
         $librarySound->update([
             'name' => $this->editName,
             'emoji' => $this->editEmoji !== '' ? $this->editEmoji : null,
-            'image_path' => $imagePath,
+            'image_path' => $this->updatedImagePath($librarySound->image_path, 'library-sounds/images'),
         ]);
 
         $this->cancelEditSound();

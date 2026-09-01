@@ -17,6 +17,8 @@ class Content extends Component
 
     public function updatedSearch(): void
     {
+        $this->ensureAdmin();
+
         $this->resetPage();
     }
 
