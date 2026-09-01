@@ -1,0 +1,10 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Alpine hides [x-cloak] itself once it boots, but doesn't ship this rule
+   for the moment before that — without it, elements gated by x-show flash
+   visible on load. */
+[x-cloak] {
+    display: none !important;
+}
