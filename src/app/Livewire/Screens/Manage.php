@@ -6,6 +6,7 @@ use App\Livewire\Concerns\HasEditableSoundForm;
 use App\Models\LibrarySound;
 use App\Models\Screen;
 use App\Models\Sound;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Layout;
@@ -99,8 +100,11 @@ class Manage extends Component
         }
 
         [$order, $siblingOrder] = [$sound->sort_order, $sibling->sort_order];
-        $sound->update(['sort_order' => $siblingOrder]);
-        $sibling->update(['sort_order' => $order]);
+
+        DB::transaction(function () use ($sound, $sibling, $order, $siblingOrder) {
+            $sound->update(['sort_order' => $siblingOrder]);
+            $sibling->update(['sort_order' => $order]);
+        });
     }
 
     public function startEditSound(Sound $sound): void

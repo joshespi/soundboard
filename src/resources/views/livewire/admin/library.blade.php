@@ -15,10 +15,9 @@
             <div>
                 <x-file-input id="massUpload" wireModel="massUpload" accept="audio/*" multiple :label="__('Choose audio files')" />
                 <x-input-error :messages="$errors->get('massUpload.*')" class="mt-2" />
-                <div wire:loading wire:target="massUpload" class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ __('Uploading...') }}</div>
             </div>
 
-            <x-primary-button type="submit" wire:loading.attr="disabled" wire:target="uploadMassSounds,massUpload">
+            <x-primary-button type="submit" wire:loading.attr="disabled" wire:target="uploadMassSounds,massUpload" loadingTarget="uploadMassSounds" :loadingLabel="__('Adding sounds...')">
                 {{ __('Add all to library') }}
             </x-primary-button>
         </form>

@@ -31,6 +31,12 @@ class Content extends Component
 
     public function render()
     {
+        // WithPagination's gotoPage()/nextPage()/previousPage() are public
+        // actions with no authorization check of their own, unlike every
+        // mutating method above — guard here too so a demoted admin (or a
+        // stale snapshot) can't keep paginating this data.
+        $this->ensureAdmin();
+
         $sounds = Sound::query()
             ->with('screen.user')
             ->when($this->search !== '', fn ($query) => $query

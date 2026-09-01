@@ -60,10 +60,6 @@ class AccessTest extends TestCase
         $sound = $screen->sounds()->create(['name' => 'Sound', 'file_path' => 'sounds/1/a.mp3', 'sort_order' => 0]);
         $librarySound = LibrarySound::create(['name' => 'Boop', 'file_path' => 'library-sounds/boop.mp3', 'sort_order' => 0]);
 
-        Livewire::actingAs($nonAdmin)->test(Content::class)
-            ->call('deleteSound', $sound)
-            ->assertForbidden();
-
         Livewire::actingAs($nonAdmin)->test(Library::class)
             ->call('deleteSound', $librarySound)
             ->assertForbidden();
@@ -75,5 +71,18 @@ class AccessTest extends TestCase
         $this->assertDatabaseHas('sounds', ['id' => $sound->id]);
         $this->assertDatabaseHas('library_sounds', ['id' => $librarySound->id]);
         $this->assertDatabaseHas('users', ['id' => $victim->id]);
+    }
+
+    /**
+     * Content also guards render() itself (see Content::render()), since
+     * WithPagination's gotoPage()/nextPage()/previousPage() have no
+     * authorization check of their own — so a non-admin is rejected before
+     * a mutating action is even reachable.
+     */
+    public function test_non_admin_cannot_render_the_content_component(): void
+    {
+        $nonAdmin = User::factory()->create();
+
+        Livewire::actingAs($nonAdmin)->test(Content::class)->assertForbidden();
     }
 }

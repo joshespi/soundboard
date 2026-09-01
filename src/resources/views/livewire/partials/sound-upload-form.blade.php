@@ -17,7 +17,6 @@
                 <x-file-input id="newSound" wireModel="newSound" accept="audio/*" :label="__('Choose audio file')" />
             </div>
             <x-input-error :messages="$errors->get('newSound')" class="mt-2" />
-            <div wire:loading wire:target="newSound" class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ __('Uploading...') }}</div>
         </div>
 
         <div>
@@ -29,11 +28,10 @@
                 @endif
             </div>
             <x-input-error :messages="$errors->get('newSoundImage')" class="mt-2" />
-            <div wire:loading wire:target="newSoundImage" class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ __('Uploading...') }}</div>
         </div>
     </div>
 
-    <x-primary-button type="submit" wire:loading.attr="disabled" wire:target="uploadSound,newSound,newSoundImage">
+    <x-primary-button type="submit" wire:loading.attr="disabled" wire:target="uploadSound,newSound,newSoundImage" loadingTarget="uploadSound" :loadingLabel="__('Saving...')">
         {{ $buttonLabel }}
     </x-primary-button>
 </form>

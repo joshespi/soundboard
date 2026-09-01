@@ -2,6 +2,7 @@
 
 namespace App\Models\Concerns;
 
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -50,7 +51,9 @@ trait HasStoredFile
     {
         try {
             return Storage::disk('public')->size($path);
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
+            Log::warning("Could not read storage size for {$path}: {$e->getMessage()}");
+
             return 0;
         }
     }
