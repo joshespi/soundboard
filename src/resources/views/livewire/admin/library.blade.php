@@ -35,19 +35,16 @@
                         @if ($editingSoundId === $librarySound->id)
                             @include('livewire.partials.sound-edit-form', ['sound' => $librarySound])
                         @else
-                            <div class="flex items-center gap-3 p-3">
-                                <x-sound-icon :sound="$librarySound" class="w-12 h-12 text-2xl rounded-lg bg-gray-100 dark:bg-gray-700 shrink-0" />
-                                <x-play-button :src="$librarySound->url" />
-                                <p class="flex-1 min-w-0 font-medium text-gray-900 dark:text-gray-100 truncate">{{ $librarySound->name }}</p>
-                                <div class="flex items-center gap-0.5 shrink-0">
+                            <x-sound-row :sound="$librarySound">
+                                <x-slot:actions>
                                     <x-icon-button wire:click="startEditSound({{ $librarySound->id }})" :label="__('Edit')">
                                         <x-icon.edit />
                                     </x-icon-button>
                                     <x-icon-button variant="danger" wire:click="deleteSound({{ $librarySound->id }})" wire:confirm="{{ __('Delete this library sound? Copies already added to screens are unaffected.') }}" :label="__('Delete')">
                                         <x-icon.trash />
                                     </x-icon-button>
-                                </div>
-                            </div>
+                                </x-slot:actions>
+                            </x-sound-row>
                         @endif
                     </li>
                 @endforeach

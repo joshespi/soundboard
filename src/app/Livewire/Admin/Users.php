@@ -23,10 +23,7 @@ class Users extends Component
         abort_if($user->id === Auth::id(), 403, "You can't delete your own account here.");
 
         DB::transaction(function () use ($user) {
-            foreach ($user->screens as $screen) {
-                $screen->sounds->each->delete();
-                $screen->delete();
-            }
+            $user->screens->each->deleteWithSounds();
 
             $user->delete();
         });

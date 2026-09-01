@@ -31,9 +31,7 @@
     @endif
 
     @if ($screens->isEmpty())
-        <div class="text-center py-16 rounded-xl border border-dashed border-gray-300 dark:border-gray-700">
-            <p class="text-gray-500 dark:text-gray-400">{{ __('No screens yet. Create your first one!') }}</p>
-        </div>
+        <x-empty-state>{{ __('No screens yet. Create your first one!') }}</x-empty-state>
     @else
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             @foreach ($screens as $screen)

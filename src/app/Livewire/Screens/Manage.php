@@ -120,7 +120,7 @@ class Manage extends Component
         $this->authorize('update', $sound);
 
         $this->validate([
-            'editName' => Screen::NAME_RULES,
+            'editName' => Sound::NAME_RULES,
             'editEmoji' => Sound::EMOJI_RULES,
             'editImage' => Sound::IMAGE_RULES,
         ]);
@@ -147,7 +147,7 @@ class Manage extends Component
 
     private function soundPath(string $sub = ''): string
     {
-        return 'sounds/'.$this->screen->user_id.($sub !== '' ? '/'.$sub : '');
+        return Sound::storagePathFor($this->screen->user_id, $sub);
     }
 
     private function copyIntoScreen(string $sourcePath, string $directory): string

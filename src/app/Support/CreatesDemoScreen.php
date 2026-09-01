@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\Screen;
+use App\Models\Sound;
 use App\Models\User;
 use Illuminate\Support\Facades\Storage;
 
@@ -37,7 +38,7 @@ class CreatesDemoScreen
         }
 
         foreach (self::DEMO_SOUNDS as $index => [$name, $emoji, $color, $frequency, $duration]) {
-            $path = 'sounds/'.$user->id.'/demo-'.str($name)->slug().'.wav';
+            $path = Sound::storagePathFor($user->id).'/demo-'.str($name)->slug().'.wav';
 
             Storage::disk('public')->put($path, $this->generateToneWav($frequency, $duration));
 

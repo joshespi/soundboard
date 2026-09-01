@@ -5,9 +5,7 @@
     </div>
 
     @if ($sounds->isEmpty())
-        <div class="text-center py-16 rounded-xl border border-dashed border-gray-300 dark:border-gray-700">
-            <p class="text-gray-500 dark:text-gray-400">{{ __('This screen has no sounds yet.') }}</p>
-        </div>
+        <x-empty-state>{{ __('This screen has no sounds yet.') }}</x-empty-state>
     @else
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
             @foreach ($sounds as $sound)

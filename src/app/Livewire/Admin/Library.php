@@ -5,7 +5,6 @@ namespace App\Livewire\Admin;
 use App\Livewire\Concerns\EnsuresAdmin;
 use App\Livewire\Concerns\HasEditableSoundForm;
 use App\Models\LibrarySound;
-use App\Models\Screen;
 use App\Models\Sound;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -80,7 +79,7 @@ class Library extends Component
         $librarySound = LibrarySound::findOrFail($this->editingSoundId);
 
         $this->validate([
-            'editName' => Screen::NAME_RULES,
+            'editName' => Sound::NAME_RULES,
             'editEmoji' => Sound::EMOJI_RULES,
             'editImage' => Sound::IMAGE_RULES,
         ]);
