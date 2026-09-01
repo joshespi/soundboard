@@ -1,59 +1,59 @@
 # One compose file for local + prod; only .env differs (APP_ENV, APP_URL, etc).
 services:
-  app:
-    build:
-      context: .
-      target: app
-    restart: unless-stopped
-    env_file: .env
-    volumes:
-      - ./src:/var/www/html
-      # Read-only so artisan test's clearEnv() can read var names by path.
-      - ./.env:/var/www/html/.env:ro
-      - storage_uploads:/var/www/html/storage/app/public
-    depends_on:
-      db:
-        condition: service_healthy
+    app:
+        build:
+            context: .
+            target: app
+        restart: unless-stopped
+        env_file: .env
+        volumes:
+            - ./src:/var/www/html
+            # Read-only so artisan test's clearEnv() can read var names by path.
+            - ./.env:/var/www/html/.env:ro
+            - ./storage_uploads:/var/www/html/storage/app/public
+        depends_on:
+            db:
+                condition: service_healthy
 
-  nginx:
-    build:
-      context: .
-      target: nginx
-    restart: unless-stopped
-    ports:
-      - "${APP_PORT:-8090}:80"
-    volumes:
-      # Only public/ — all nginx serves — so `npm run build` shows up without an image rebuild.
-      - ./src/public:/var/www/html/public:ro
-      # Same path as in `app` so the baked-in public/storage symlink resolves.
-      - storage_uploads:/var/www/html/storage/app/public:ro
-    depends_on:
-      - app
+    nginx:
+        build:
+            context: .
+            target: nginx
+        restart: unless-stopped
+        ports:
+            - "${APP_PORT:-8090}:80"
+        volumes:
+            # Only public/ — all nginx serves — so `npm run build` shows up without an image rebuild.
+            - ./src/public:/var/www/html/public:ro
+            # Same path as in `app` so the baked-in public/storage symlink resolves.
+            - ./storage_uploads:/var/www/html/storage/app/public:ro
+        depends_on:
+            - app
 
-  # One-off npm runner — no Node needed on host.
-  node:
-    image: node:22-alpine
-    working_dir: /app
-    volumes:
-      - ./src:/app
-    restart: "no"
+    # One-off npm runner — no Node needed on host.
+    node:
+        image: node:22-alpine
+        working_dir: /app
+        volumes:
+            - ./src:/app
+        restart: "no"
 
-  db:
-    image: mariadb:11.8
-    restart: unless-stopped
-    environment:
-      MYSQL_DATABASE: ${DB_DATABASE}
-      MYSQL_USER: ${DB_USERNAME}
-      MYSQL_PASSWORD: ${DB_PASSWORD}
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
-    volumes:
-      - db_data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
-      interval: 5s
-      timeout: 5s
-      retries: 20
+    db:
+        image: mariadb:11.8
+        restart: unless-stopped
+        environment:
+            MYSQL_DATABASE: ${DB_DATABASE}
+            MYSQL_USER: ${DB_USERNAME}
+            MYSQL_PASSWORD: ${DB_PASSWORD}
+            MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+        volumes:
+            - ./db_data:/var/lib/mysql
+        healthcheck:
+            test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+            interval: 5s
+            timeout: 5s
+            retries: 20
 
 volumes:
-  db_data:
-  storage_uploads:
+    db_data:
+    storage_uploads:
