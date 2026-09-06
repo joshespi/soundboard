@@ -1,4 +1,4 @@
-# src/ is bind-mounted at runtime (docker-compose.yml) — this image ships no app code, vendor/, or build/.
+# src/ is bind-mounted at runtime (docker-compose.yml) — this image ships no app code, vendor/, node_modules/, or build/.
 FROM php:8.4-fpm-alpine AS app
 
 RUN apk add --no-cache \
@@ -10,6 +10,8 @@ RUN apk add --no-cache \
         icu-dev \
         oniguruma-dev \
         sqlite-dev \
+        nodejs \
+        npm \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install pdo_mysql pdo_sqlite mbstring bcmath gd zip intl exif pcntl opcache
 

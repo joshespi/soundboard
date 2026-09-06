@@ -8,8 +8,8 @@ A Laravel + Livewire app where each signed-up user builds their own soundboards 
 - MariaDB 11.8 (driver name `mariadb` in `config/database.php`, not `mysql`).
 - Docker Compose: `nginx` (static files + fastcgi proxy) → `app` (php-fpm only) → `db` (MariaDB). No TLS termination in this stack — nginx only ever speaks plain HTTP; a real HTTPS deployment needs a reverse proxy/tunnel in front (see `TRUSTED_PROXIES` in `.env.example`).
 - Repo root holds only deployment concerns (`Dockerfile`, `docker-compose.yml`, `docker/`, `scripts/`); the actual Laravel app lives in `src/` (its own `app/`, `resources/`, `composer.json`, etc. — a normal Laravel root, just nested).
-- All commands are run through Docker — there is no local PHP/Node install expected. Do **not** follow generic "install PHP/Node locally" bootstrap advice for this repo. `composer` runs inside the `app` container; `npm` runs via the one-off `node` compose service (`docker compose run --rm node npm run build`).
-- One `docker-compose.yml`, no override files, used identically for local dev and production — `src/` is *always* bind-mounted into `app` (whole tree) and `nginx` (`public/` only), and the `Dockerfile` builds a bare runtime image with no app code, `vendor/`, or `public/build` baked in (all of that comes from the bind mount + `docker/php/entrypoint.sh`'s runtime `composer install` / the `node` service's `npm run build`). What differs between local and a real deployment lives entirely in `.env` (`APP_ENV`, `SESSION_SECURE_COOKIE`, `APP_URL`, `APP_PORT`) — see its comments in `.env.example`. Don't reintroduce a second compose file for this; that was tried and reverted twice as unnecessary complexity.
+- All commands are run through Docker — there is no local PHP/Node install expected. Do **not** follow generic "install PHP/Node locally" bootstrap advice for this repo. Both `composer` and `npm` run inside the `app` container (it has Node/npm installed alongside PHP) — no separate `node` compose service. Rebuild styles/JS with `docker compose exec app npm run build`.
+- One `docker-compose.yml`, no override files, used identically for local dev and production — `src/` is *always* bind-mounted into `app` (whole tree) and `nginx` (`public/` only), and the `Dockerfile` builds a bare runtime image with no app code, `vendor/`, `node_modules/`, or `public/build` baked in (all of that comes from the bind mount + `docker/php/entrypoint.sh`'s runtime `composer install` / `npm ci` / `npm run build`). What differs between local and a real deployment lives entirely in `.env` (`APP_ENV`, `SESSION_SECURE_COOKIE`, `APP_URL`, `APP_PORT`) — see its comments in `.env.example`. Don't reintroduce a second compose file for this; that was tried and reverted twice as unnecessary complexity.
 
 ## Domain model
 
@@ -32,12 +32,11 @@ Same command for local dev and production — only `.env` differs (see above):
 
 ```bash
 docker compose up -d --build
-docker compose run --rm node npm ci && docker compose run --rm node npm run build
 ```
 
 `.env.example` defaults to local trial use (`APP_ENV=local`, port 8090, no HTTPS); switching it to a real deployment is documented in README.md's "Deploying it for real" section.
 
-The `app` container's entrypoint (`docker/php/entrypoint.sh`) installs composer deps if `vendor/` is missing (fresh clone), waits for MariaDB, runs migrations + seeding, and — only when `APP_ENV=production` — runs `php artisan optimize`; otherwise it runs `optimize:clear` so cached config never masks a `.env`/testing override. There's no separate deploy-time migration step to remember.
+The `app` container's entrypoint (`docker/php/entrypoint.sh`) installs composer deps if `vendor/` is missing and npm deps if `node_modules/` is missing (fresh clone), runs `npm run build` (every start, so pulled asset changes always land), waits for MariaDB, runs migrations + seeding, and — only when `APP_ENV=production` — runs `php artisan optimize`; otherwise it runs `optimize:clear` so cached config never masks a `.env`/testing override. There's no separate deploy-time migration or asset-build step to remember — `scripts/deploy.sh` just does `docker compose up -d --build` + `docker compose restart app` to re-trigger the entrypoint on an already-running container.
 
 ## Testing
 

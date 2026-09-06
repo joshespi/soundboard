@@ -10,6 +10,12 @@ if [ ! -f vendor/autoload.php ]; then
     fi
 fi
 
+# node_modules/ isn't baked into the image either; install once on a fresh clone, skip once it exists.
+[ -d node_modules ] || npm ci
+
+# Build frontend assets so the app is ready to go without a manual step; re-run `npm run build` by hand for a quick style tweak.
+npm run build
+
 chown -R www-data:www-data storage bootstrap/cache
 
 # Not baked into the image either; guarded since re-linking an existing symlink errors.

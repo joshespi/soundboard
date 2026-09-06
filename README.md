@@ -17,7 +17,7 @@ cp .env.example .env   # fill in DB_PASSWORD / DB_ROOT_PASSWORD / APP_KEY
 scripts/deploy.sh
 ```
 
-Open http://localhost:8090. Seeded account: `test@example.com` / `password` (has a "Demo Board" screen with sample sounds). Re-run `npm run build` after CSS/JS changes.
+Open http://localhost:8090. Seeded account: `test@example.com` / `password` (has a "Demo Board" screen with sample sounds). Re-run `docker compose exec app npm run build` after CSS/JS changes.
 
 Stop: `docker compose down` (add `-v` to wipe DB/uploads too).
 

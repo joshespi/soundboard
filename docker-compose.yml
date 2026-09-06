@@ -30,14 +30,6 @@ services:
         depends_on:
             - app
 
-    # One-off npm runner — no Node needed on host.
-    node:
-        image: node:22-alpine
-        working_dir: /app
-        volumes:
-            - ./src:/app
-        restart: "no"
-
     db:
         image: mariadb:11.8
         restart: unless-stopped

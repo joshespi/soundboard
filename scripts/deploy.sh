@@ -7,6 +7,4 @@ set -eu
 cd "$(dirname "$0")/.."
 
 docker compose up -d --build
-docker compose run --rm node npm ci
-docker compose run --rm node npm run build
 docker compose restart app
