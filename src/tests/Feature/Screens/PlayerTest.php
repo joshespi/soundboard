@@ -4,6 +4,7 @@ namespace Tests\Feature\Screens;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Js;
 use Tests\TestCase;
 
 class PlayerTest extends TestCase
@@ -25,6 +26,27 @@ class PlayerTest extends TestCase
             ->get(route('screens.play', $screen))
             ->assertOk()
             ->assertSee('Boop');
+    }
+
+    public function test_play_page_exposes_sound_urls_to_the_audio_engine(): void
+    {
+        $user = User::factory()->create();
+        $screen = $user->screens()->create(['name' => 'Test Screen', 'sort_order' => 0]);
+        $screen->sounds()->create([
+            'name' => 'Boop',
+            'file_path' => 'sounds/1/boop.mp3',
+            'sort_order' => 0,
+        ]);
+
+        // The audio engine is handed the whole list up front so it can pre-decode clips.
+        // Matching on the filename alone would not do: every tile's x-on:click carries its
+        // own URL, so that assertion passes even with the x-data list deleted.
+        $urls = Js::from($screen->sounds()->get()->pluck('url'));
+
+        $this->actingAs($user)
+            ->get(route('screens.play', $screen))
+            ->assertOk()
+            ->assertSee('x-data="soundboard('.$urls.')"', false);
     }
 
     public function test_other_users_cannot_view_play_page(): void

@@ -19,6 +19,12 @@
     </head>
     <body class="font-sans antialiased">
         <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+            {{-- @persist keeps the bar (and its Alpine state) alive across wire:navigate,
+                 so the ON AIR indicator never blanks while he moves between screens. --}}
+            @persist('broadcast')
+                <x-broadcast-bar />
+            @endpersist
+
             <livewire:layout.navigation />
 
             <!-- Page Heading -->

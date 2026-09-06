@@ -34,6 +34,9 @@ new class extends Component
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" wire:navigate>
                         {{ __('My Screens') }}
                     </x-nav-link>
+                    <x-nav-link :href="route('voice.setup')" :active="request()->routeIs('voice.setup')" wire:navigate>
+                        {{ __('Voice') }}
+                    </x-nav-link>
                     @if (auth()->user()->isAdmin())
                         <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.*')" wire:navigate>
                             {{ __('Admin') }}
@@ -89,6 +92,9 @@ new class extends Component
         <div class="pt-2 pb-3 space-y-1">
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" wire:navigate>
                 {{ __('My Screens') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('voice.setup')" :active="request()->routeIs('voice.setup')" wire:navigate>
+                {{ __('Voice') }}
             </x-responsive-nav-link>
             @if (auth()->user()->isAdmin())
                 <x-responsive-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.*')" wire:navigate>
