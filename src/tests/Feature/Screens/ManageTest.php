@@ -4,6 +4,7 @@ namespace Tests\Feature\Screens;
 
 use App\Livewire\Screens\Manage;
 use App\Models\LibrarySound;
+use App\Models\Sound;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -151,5 +152,116 @@ class ManageTest extends TestCase
         $librarySound->delete();
         Storage::disk('public')->assertExists($sound->file_path);
         Storage::disk('public')->assertExists($sound->image_path);
+    }
+
+    public function test_uploads_use_the_chosen_colour_or_cycle_through_the_presets(): void
+    {
+        Storage::fake('public');
+
+        $user = User::factory()->create();
+        $screen = $user->screens()->create(['name' => 'Test Screen', 'sort_order' => 0]);
+
+        $component = Livewire::actingAs($user)->test(Manage::class, ['screen' => $screen]);
+
+        $component
+            ->set('newSound', UploadedFile::fake()->create('a.mp3', 100, 'audio/mpeg'))
+            ->set('newSoundColor', '#ef4444')
+            ->call('uploadSound')
+            ->set('newSound', UploadedFile::fake()->create('b.mp3', 100, 'audio/mpeg'))
+            ->call('uploadSound');
+
+        $colors = $screen->sounds()->pluck('color')->all();
+
+        $this->assertSame('#ef4444', $colors[0]);
+        $this->assertSame(Sound::colorForPosition(1), $colors[1]);
+    }
+
+    public function test_rejects_a_colour_that_is_not_a_hex_value(): void
+    {
+        Storage::fake('public');
+
+        $user = User::factory()->create();
+        $screen = $user->screens()->create(['name' => 'Test Screen', 'sort_order' => 0]);
+
+        Livewire::actingAs($user)
+            ->test(Manage::class, ['screen' => $screen])
+            ->set('newSound', UploadedFile::fake()->create('a.mp3', 100, 'audio/mpeg'))
+            ->set('newSoundColor', 'red; background:url(x)')
+            ->call('uploadSound')
+            ->assertHasErrors('newSoundColor');
+
+        $this->assertSame(0, $screen->sounds()->count());
+    }
+
+    public function test_a_long_filename_is_trimmed_to_a_name_that_can_be_edited_later(): void
+    {
+        Storage::fake('public');
+
+        $user = User::factory()->create();
+        $screen = $user->screens()->create(['name' => 'Test Screen', 'sort_order' => 0]);
+
+        Livewire::actingAs($user)
+            ->test(Manage::class, ['screen' => $screen])
+            ->set('newSound', UploadedFile::fake()->create(str_repeat('a', 80).'.mp3', 100, 'audio/mpeg'))
+            ->call('uploadSound')
+            ->assertHasNoErrors();
+
+        $this->assertSame(50, mb_strlen($screen->sounds()->firstOrFail()->name));
+    }
+
+    public function test_owner_can_edit_a_sounds_colour(): void
+    {
+        $user = User::factory()->create();
+        $screen = $user->screens()->create(['name' => 'Test Screen', 'sort_order' => 0]);
+        $sound = $screen->sounds()->create(['name' => 'Boop', 'file_path' => 'x.mp3', 'color' => '#6366f1', 'sort_order' => 0]);
+
+        Livewire::actingAs($user)
+            ->test(Manage::class, ['screen' => $screen])
+            ->call('startEditSound', $sound)
+            ->assertSet('editColor', '#6366f1')
+            ->set('editColor', '#22c55e')
+            ->call('saveEditSound');
+
+        $this->assertSame('#22c55e', $sound->fresh()->color);
+    }
+
+    public function test_reorder_moves_a_sound_to_the_given_position(): void
+    {
+        $user = User::factory()->create();
+        $screen = $user->screens()->create(['name' => 'Test Screen', 'sort_order' => 0]);
+        [, , $c] = collect(['A', 'B', 'C'])->map(
+            fn ($name, $i) => $screen->sounds()->create(['name' => $name, 'file_path' => "$name.mp3", 'sort_order' => $i])
+        )->all();
+
+        Livewire::actingAs($user)
+            ->test(Manage::class, ['screen' => $screen])
+            ->call('reorder', $c->id, 0);
+
+        $this->assertSame(['C', 'A', 'B'], $screen->sounds()->pluck('name')->all());
+    }
+
+    public function test_cannot_reorder_a_sound_from_another_screen(): void
+    {
+        $user = User::factory()->create();
+        $screen = $user->screens()->create(['name' => 'Mine', 'sort_order' => 0]);
+        $other = User::factory()->create()->screens()->create(['name' => 'Theirs', 'sort_order' => 0]);
+        $foreign = $other->sounds()->create(['name' => 'X', 'file_path' => 'x.mp3', 'sort_order' => 0]);
+
+        Livewire::actingAs($user)
+            ->test(Manage::class, ['screen' => $screen])
+            ->call('reorder', $foreign->id, 0)
+            ->assertNotFound();
+    }
+
+    public function test_library_search_treats_wildcards_literally(): void
+    {
+        $user = User::factory()->create();
+        $screen = $user->screens()->create(['name' => 'Test Screen', 'sort_order' => 0]);
+        LibrarySound::create(['name' => 'Boop', 'file_path' => 'a.mp3', 'sort_order' => 0]);
+
+        Livewire::actingAs($user)
+            ->test(Manage::class, ['screen' => $screen])
+            ->set('librarySearch', '%')
+            ->assertSee('Nothing found.');
     }
 }

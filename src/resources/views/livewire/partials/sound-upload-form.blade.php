@@ -1,4 +1,13 @@
-<form wire:submit="uploadSound" class="space-y-4">
+<form
+    wire:submit="uploadSound"
+    class="space-y-4"
+    x-data="{ uploading: false, progress: 0 }"
+    x-on:livewire-upload-start="uploading = true; progress = 0"
+    x-on:livewire-upload-progress="progress = $event.detail.progress"
+    x-on:livewire-upload-finish="uploading = false"
+    x-on:livewire-upload-error="uploading = false"
+    x-on:livewire-upload-cancel="uploading = false"
+>
     <div class="flex gap-3">
         <div class="flex-1 min-w-0">
             <x-input-label for="newSoundName" :value="__('Label (optional)')" />
@@ -8,6 +17,12 @@
             <x-input-label for="newSoundEmoji" :value="__('Emoji')" />
             <x-emoji-input id="newSoundEmoji" wireModel="newSoundEmoji" />
         </div>
+    </div>
+
+    <div>
+        <x-input-label :value="__('Tile colour')" />
+        <x-color-picker class="mt-2" wireModel="newSoundColor" :auto="true" />
+        <x-input-error :messages="$errors->get('newSoundColor')" class="mt-2" />
     </div>
 
     <div class="flex flex-wrap gap-x-8 gap-y-4">
@@ -29,6 +44,10 @@
             </div>
             <x-input-error :messages="$errors->get('newSoundImage')" class="mt-2" />
         </div>
+    </div>
+
+    <div x-show="uploading" x-cloak class="h-2 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden" role="progressbar" aria-valuemin="0" aria-valuemax="100" :aria-valuenow="progress">
+        <div class="h-full bg-indigo-600 transition-[width]" :style="{ width: progress + '%' }"></div>
     </div>
 
     <x-primary-button type="submit" wire:loading.attr="disabled" wire:target="uploadSound,newSound,newSoundImage" loadingTarget="uploadSound" :loadingLabel="__('Saving...')">

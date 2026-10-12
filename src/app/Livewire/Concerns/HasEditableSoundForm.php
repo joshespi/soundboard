@@ -6,6 +6,7 @@ use App\Models\LibrarySound;
 use App\Models\Sound;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Livewire\Attributes\Validate;
 
 /**
@@ -18,7 +19,7 @@ trait HasEditableSoundForm
     #[Validate(Sound::AUDIO_RULES)]
     public $newSound = null;
 
-    #[Validate('nullable|string|max:255')]
+    #[Validate(Sound::NAME_RULES_OPTIONAL)]
     public string $newSoundName = '';
 
     #[Validate(Sound::EMOJI_RULES)]
@@ -26,6 +27,13 @@ trait HasEditableSoundForm
 
     #[Validate(Sound::IMAGE_RULES)]
     public $newSoundImage = null;
+
+    // '' means "auto": the next preset colour in rotation.
+    #[Validate(Sound::COLOR_RULES)]
+    public string $newSoundColor = '';
+
+    #[Validate(Sound::COLOR_RULES)]
+    public string $editColor = '';
 
     public ?int $editingSoundId = null;
 
@@ -43,6 +51,7 @@ trait HasEditableSoundForm
         $this->editingSoundId = $sound->id;
         $this->editName = $sound->name;
         $this->editEmoji = $sound->emoji ?? '';
+        $this->editColor = $sound->color ?? '';
         $this->editImage = null;
         $this->editRemoveImage = false;
         $this->resetValidation();
@@ -50,11 +59,11 @@ trait HasEditableSoundForm
 
     public function cancelEditSound(): void
     {
-        $this->reset('editingSoundId', 'editName', 'editEmoji', 'editImage', 'editRemoveImage');
+        $this->reset('editingSoundId', 'editName', 'editEmoji', 'editColor', 'editImage', 'editRemoveImage');
         $this->resetValidation();
     }
 
-    protected function uploadedSoundAttributes(string $audioPath, string $imagePath): array
+    protected function uploadedSoundAttributes(string $audioPath, string $imagePath, int $position): array
     {
         $path = $this->newSound->store($audioPath, 'public');
         $storedImagePath = $this->newSoundImage
@@ -62,7 +71,8 @@ trait HasEditableSoundForm
             : null;
 
         return [
-            'name' => $this->newSoundName !== '' ? $this->newSoundName : pathinfo($this->newSound->getClientOriginalName(), PATHINFO_FILENAME),
+            'name' => $this->newSoundName !== '' ? $this->newSoundName : Str::limit(pathinfo($this->newSound->getClientOriginalName(), PATHINFO_FILENAME), 50, ''),
+            'color' => $this->newSoundColor !== '' ? $this->newSoundColor : Sound::colorForPosition($position),
             'emoji' => $this->newSoundEmoji !== '' ? $this->newSoundEmoji : null,
             'image_path' => $storedImagePath,
             'file_path' => $path,
@@ -71,7 +81,7 @@ trait HasEditableSoundForm
 
     protected function resetUploadForm(): void
     {
-        $this->reset('newSound', 'newSoundName', 'newSoundEmoji', 'newSoundImage');
+        $this->reset('newSound', 'newSoundName', 'newSoundEmoji', 'newSoundColor', 'newSoundImage');
     }
 
     protected function updatedImagePath(?string $currentImagePath, string $imageStoragePath): ?string

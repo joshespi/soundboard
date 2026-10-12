@@ -14,6 +14,12 @@
     </div>
 
     <div>
+        <x-input-label :value="__('Tile colour')" />
+        <x-color-picker class="mt-2" wireModel="editColor" />
+        <x-input-error :messages="$errors->get('editColor')" class="mt-2" />
+    </div>
+
+    <div>
         <x-input-label :value="__('Replace tile image')" />
         <div class="mt-1">
             <x-file-input id="editImage-{{ $sound->id }}" wireModel="editImage" accept="image/*" :label="__('Choose image')" />

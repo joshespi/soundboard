@@ -37,9 +37,19 @@
             @foreach ($screens as $screen)
                 <div class="p-4 sm:p-5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col gap-4">
                     <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-lg bg-indigo-50 dark:bg-indigo-950 flex items-center justify-center shrink-0">
-                            <x-application-logo class="w-5 h-5 fill-current text-indigo-600 dark:text-indigo-400" />
-                        </div>
+                        @if ($screen->sounds->isEmpty())
+                            <div class="w-10 h-10 rounded-lg bg-indigo-50 dark:bg-indigo-950 flex items-center justify-center shrink-0">
+                                <x-application-logo class="w-5 h-5 fill-current text-indigo-600 dark:text-indigo-400" />
+                            </div>
+                        @else
+                            <div class="grid grid-cols-2 gap-0.5 w-10 h-10 shrink-0 rounded-lg overflow-hidden">
+                                @foreach ($screen->sounds as $preview)
+                                    <div class="flex items-center justify-center overflow-hidden" style="background-color: {{ $preview->color }}">
+                                        <x-sound-icon :sound="$preview" class="w-full h-full text-[10px]" />
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
                         <div class="min-w-0">
                             <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">{{ $screen->name }}</h3>
                             <p class="text-sm text-gray-500 dark:text-gray-400">
@@ -54,7 +64,7 @@
                             variant="danger"
                             href="#"
                             wire:click.prevent="deleteScreen({{ $screen->id }})"
-                            wire:confirm="{{ __('Delete this screen and all its sounds?') }}"
+                            wire:confirm="{{ trans_choice('Delete “:name” and its :count sound?|Delete “:name” and its :count sounds?', $screen->sounds_count, ['name' => $screen->name, 'count' => $screen->sounds_count]) }}"
                             class="ms-auto"
                         >
                             {{ __('Delete') }}

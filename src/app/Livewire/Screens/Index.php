@@ -40,7 +40,10 @@ class Index extends Component
     public function render()
     {
         return view('livewire.screens.index', [
-            'screens' => Auth::user()->screens()->withCount('sounds')->get(),
+            'screens' => Auth::user()->screens()
+                ->withCount('sounds')
+                ->with(['sounds' => fn ($query) => $query->limit(4)])
+                ->get(),
         ]);
     }
 }

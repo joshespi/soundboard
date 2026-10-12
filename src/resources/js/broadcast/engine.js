@@ -279,29 +279,86 @@ function resumeContext() {
     ctx?.resume().catch(() => {});
 }
 
-function playFallback(url) {
-    new Audio(url).play().catch(() => {
-        // Autoplay policy or a bad file — nothing useful to do from here.
-    });
+/** Stop callbacks for every clip currently sounding, so "stop all" can silence them. */
+const playingClips = new Set();
+
+/** Bumped by stopAll() so a clip still decoding when it's pressed doesn't start afterwards. */
+let stopGeneration = 0;
+
+function trackClip(stop, onEnd) {
+    const clip = {
+        stop,
+        end() {
+            if (playingClips.delete(clip)) {
+                onEnd();
+            }
+        },
+    };
+
+    playingClips.add(clip);
+
+    return clip;
 }
 
-export function play(url) {
+function playFallback(url, onEnd) {
+    const audio = new Audio(url);
+    const clip = trackClip(() => audio.pause(), onEnd);
+
+    audio.addEventListener('ended', clip.end);
+    audio.play().catch(clip.end);
+}
+
+/** onEnd fires once, when the clip finishes, is stopped, or fails to play. */
+export function play(url, onEnd = () => {}) {
     if (!active || !ctx) {
-        playFallback(url);
+        playFallback(url, onEnd);
 
         return;
     }
 
     resumeContext();
 
+    const generation = stopGeneration;
+
     loadBuffer(url)
         .then((buffer) => {
+            if (generation !== stopGeneration) {
+                onEnd();
+
+                return;
+            }
+
             const source = ctx.createBufferSource();
             source.buffer = buffer;
             source.connect(graph.clipBus);
-            source.start();
+
+            const clip = trackClip(() => source.stop(), onEnd);
+            source.addEventListener('ended', clip.end);
+
+            try {
+                source.start();
+            } catch {
+                clip.end();
+            }
         })
-        .catch(() => playFallback(url));
+        .catch(() => {
+            if (generation !== stopGeneration) {
+                onEnd();
+
+                return;
+            }
+
+            playFallback(url, onEnd);
+        });
+}
+
+export function stopAll() {
+    stopGeneration++;
+
+    for (const clip of [...playingClips]) {
+        clip.stop();
+        clip.end();
+    }
 }
 
 /** Pre-decodes a screen's clips so the first tap of each tile is as fast as the rest. */

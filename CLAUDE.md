@@ -15,12 +15,15 @@ A Laravel + Livewire app where each signed-up user builds their own soundboards 
 
 - `User` hasMany `Screen` (a named soundboard, owned by one user).
 - `Screen` hasMany `Sound` (an uploaded audio file: name, emoji, optional `image_path` tile image, color, file_path — both on the `public` disk). The tile shows the image when present, else the emoji, else a default speaker emoji — see the `x-sound-icon` Blade component.
-- Ownership is enforced via `ScreenPolicy` / `SoundPolicy` — a user can only see/edit/play their own screens. There is no cross-user sharing or admin role.
+- Ownership is enforced via `ScreenPolicy` / `SoundPolicy` — a user can only see/edit/play their own screens. There is no cross-user sharing of screens. Two exceptions: `users.is_admin` marks admins (the `admin` middleware + `EnsuresAdmin` guard the `admin.*` routes: dashboard, content moderation, user list, library management), and `LibrarySound` is an admin-curated shared library that users copy into their own screens (the copies are independent files, not references).
 
 ## Key paths
 
 - `src/app/Livewire/Screens/{Index,Manage,Player}.php` + matching views in `src/resources/views/livewire/screens/` — the whole product surface.
 - `src/routes/web.php` — `dashboard` (screens list), `screens.manage`, `screens.play`.
+- `src/app/Livewire/Admin/*` + `src/resources/views/livewire/admin/` — admin area (`admin.*` routes).
+- `src/app/Livewire/Broadcast/Setup.php` (`voice.setup`) + `src/resources/js/broadcast/` — optional "go live" voice broadcast: one Web Audio engine mixes mic and clips to a virtual cable so Discord etc. hears the board. Alpine glue is in `alpine.js` (`soundboard`, `broadcastBar`, ...); `engine.js` owns all audio state. The player's play/stop-all/keyboard shortcuts (1-9, Esc) go through it.
+- `src/app/Livewire/Concerns/HasEditableSoundForm.php` — upload/edit form state shared by `ScreensManage` and `Adminibrary`. tile colours come from the `sound::colors` presets (`x-color-picker`); sound reordering in manage is drag-and-drop via alpine's bundled `x-sort` plus `reorder()`.
 - `Dockerfile`, `docker-compose.yml`, `docker/` — deployment.
 - `scripts/db-backup.sh`, `scripts/db-restore.sh` — database backup/restore against the running `db` container.
 - `src/public/sw.js`, `src/public/manifest.webmanifest`, `src/resources/views/partials/pwa-head.blade.php` — PWA/offline support.

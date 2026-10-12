@@ -40,12 +40,42 @@ const liveToggle = {
 
 export function registerBroadcast(Alpine) {
     Alpine.data('soundboard', (urls = []) => bound({
+        /** url -> how many overlapping copies of that clip are sounding right now. */
+        playing: {},
         onInit() {
             engine.warm(urls);
         },
+        onDestroy() {
+            engine.stopAll();
+        },
         play(url) {
+            this.playing[url] = (this.playing[url] ?? 0) + 1;
+
             // Falls back to plain `new Audio()` whenever broadcast is off.
-            engine.play(url);
+            engine.play(url, () => {
+                this.playing[url]--;
+            });
+        },
+        isPlaying(url) {
+            return (this.playing[url] ?? 0) > 0;
+        },
+        get anyPlaying() {
+            return Object.values(this.playing).some((count) => count > 0);
+        },
+        stopAll() {
+            engine.stopAll();
+        },
+        /** 1-9 play the first nine tiles in order; Escape silences everything. */
+        onKey(event) {
+            if (event.repeat || event.ctrlKey || event.metaKey || event.altKey || event.target.closest?.('input, textarea, select, [contenteditable]')) {
+                return;
+            }
+
+            if (event.key === 'Escape') {
+                this.stopAll();
+            } else if (/^[1-9]$/.test(event.key) && urls[Number(event.key) - 1]) {
+                this.play(urls[Number(event.key) - 1]);
+            }
         },
     }));
 

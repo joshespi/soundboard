@@ -69,13 +69,18 @@
         @if ($sounds->isEmpty())
             <p class="text-gray-500 dark:text-gray-400 text-sm">{{ __('No sounds yet — add one above.') }}</p>
         @else
-            <ul class="space-y-2">
+            <ul class="space-y-2" x-sort="$wire.reorder($item, $position)">
                 @foreach ($sounds as $sound)
-                    <li wire:key="sound-{{ $sound->id }}" class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                    <li wire:key="sound-{{ $sound->id }}" x-sort:item="{{ $sound->id }}" class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
                         @if ($editingSoundId === $sound->id)
                             @include('livewire.partials.sound-edit-form', ['sound' => $sound])
                         @else
                             <x-sound-row :sound="$sound">
+                                <x-slot:handle>
+                                    <span x-sort:handle class="sort-handle cursor-grab touch-none p-1 -ms-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" title="{{ __('Drag to reorder') }}" aria-hidden="true">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4"><path d="M7 4a1.25 1.25 0 1 1-2.5 0A1.25 1.25 0 0 1 7 4Zm0 6a1.25 1.25 0 1 1-2.5 0A1.25 1.25 0 0 1 7 10Zm-1.25 7.25a1.25 1.25 0 1 0 0-2.5 1.25 1.25 0 0 0 0 2.5ZM15.5 4a1.25 1.25 0 1 1-2.5 0 1.25 1.25 0 0 1 2.5 0ZM14.25 11.25a1.25 1.25 0 1 0 0-2.5 1.25 1.25 0 0 0 0 2.5Zm1.25 4.5a1.25 1.25 0 1 1-2.5 0 1.25 1.25 0 0 1 2.5 0Z" /></svg>
+                                    </span>
+                                </x-slot:handle>
                                 <x-slot:actions>
                                     <x-icon-button wire:click="startEditSound({{ $sound->id }})" :label="__('Edit')">
                                         <x-icon.edit />

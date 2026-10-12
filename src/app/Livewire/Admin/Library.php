@@ -33,8 +33,9 @@ class Library extends Component
         foreach ($this->massUpload as $file) {
             LibrarySound::create([
                 'name' => pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
+                'color' => Sound::colorForPosition(++$sortOrder),
                 'file_path' => $file->store('library-sounds', 'public'),
-                'sort_order' => ++$sortOrder,
+                'sort_order' => $sortOrder,
             ]);
         }
 
@@ -51,8 +52,10 @@ class Library extends Component
             return;
         }
 
-        LibrarySound::create($this->uploadedSoundAttributes('library-sounds', 'library-sounds/images') + [
-            'sort_order' => $this->nextSortOrder(LibrarySound::query()),
+        $order = $this->nextSortOrder(LibrarySound::query());
+
+        LibrarySound::create($this->uploadedSoundAttributes('library-sounds', 'library-sounds/images', $order) + [
+            'sort_order' => $order,
         ]);
 
         $this->resetUploadForm();
@@ -81,12 +84,14 @@ class Library extends Component
         $this->validate([
             'editName' => Sound::NAME_RULES,
             'editEmoji' => Sound::EMOJI_RULES,
+            'editColor' => Sound::COLOR_RULES,
             'editImage' => Sound::IMAGE_RULES,
         ]);
 
         $librarySound->update([
             'name' => $this->editName,
             'emoji' => $this->editEmoji !== '' ? $this->editEmoji : null,
+            'color' => $this->editColor ?: $librarySound->color,
             'image_path' => $this->updatedImagePath($librarySound->image_path, 'library-sounds/images'),
         ]);
 

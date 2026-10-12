@@ -51,8 +51,10 @@ class Manage extends Component
             return;
         }
 
-        $this->screen->sounds()->create($this->uploadedSoundAttributes($this->soundPath(), $this->soundPath('images')) + [
-            'sort_order' => $this->nextSortOrder($this->screen->sounds()),
+        $order = $this->nextSortOrder($this->screen->sounds());
+
+        $this->screen->sounds()->create($this->uploadedSoundAttributes($this->soundPath(), $this->soundPath('images'), $order) + [
+            'sort_order' => $order,
         ]);
 
         $this->resetUploadForm();
@@ -107,6 +109,25 @@ class Manage extends Component
         });
     }
 
+    // Drag-and-drop target (x-sort): moves one sound to a zero-based position and renumbers the rest.
+    public function reorder(int $soundId, int $position): void
+    {
+        $this->authorize('update', $this->screen);
+
+        $ids = $this->screen->sounds()->pluck('id')->all();
+
+        abort_unless(in_array($soundId, $ids, true), 404);
+
+        $ids = array_values(array_diff($ids, [$soundId]));
+        array_splice($ids, max(0, min($position, count($ids))), 0, [$soundId]);
+
+        DB::transaction(function () use ($ids) {
+            foreach ($ids as $order => $id) {
+                $this->screen->sounds()->whereKey($id)->update(['sort_order' => $order]);
+            }
+        });
+    }
+
     public function startEditSound(Sound $sound): void
     {
         $this->authorize('update', $sound);
@@ -122,12 +143,14 @@ class Manage extends Component
         $this->validate([
             'editName' => Sound::NAME_RULES,
             'editEmoji' => Sound::EMOJI_RULES,
+            'editColor' => Sound::COLOR_RULES,
             'editImage' => Sound::IMAGE_RULES,
         ]);
 
         $sound->update([
             'name' => $this->editName,
             'emoji' => $this->editEmoji !== '' ? $this->editEmoji : null,
+            'color' => $this->editColor ?: $sound->color,
             'image_path' => $this->updatedImagePath($sound->image_path, $this->soundPath('images')),
         ]);
 
@@ -139,7 +162,7 @@ class Manage extends Component
         return view('livewire.screens.manage', [
             'sounds' => $this->screen->sounds()->get(),
             'librarySounds' => LibrarySound::query()
-                ->when($this->librarySearch !== '', fn ($query) => $query->where('name', 'like', '%'.$this->librarySearch.'%'))
+                ->when($this->librarySearch !== '', fn ($query) => $query->where('name', 'like', '%'.addcslashes($this->librarySearch, '%_\\').'%'))
                 ->orderBy('sort_order')
                 ->get(),
         ]);
