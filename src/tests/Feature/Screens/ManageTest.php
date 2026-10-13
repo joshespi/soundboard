@@ -38,6 +38,18 @@ class ManageTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_owner_can_toggle_the_public_link(): void
+    {
+        $user = User::factory()->create();
+        $screen = $user->screens()->create(['name' => 'Test Screen', 'sort_order' => 0]);
+
+        Livewire::actingAs($user)
+            ->test(Manage::class, ['screen' => $screen])
+            ->set('isPublic', true);
+
+        $this->assertTrue($screen->fresh()->is_public);
+    }
+
     public function test_owner_can_upload_a_sound_with_an_image(): void
     {
         Storage::fake('public');

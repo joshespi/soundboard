@@ -6,13 +6,15 @@ RUN apk add --no-cache \
         libzip-dev \
         libpng-dev \
         libjpeg-turbo-dev \
+        libwebp-dev \
         freetype-dev \
         icu-dev \
         oniguruma-dev \
         sqlite-dev \
         nodejs \
         npm \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+        ffmpeg \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
     && docker-php-ext-install pdo_mysql pdo_sqlite mbstring bcmath gd zip intl exif pcntl opcache
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
@@ -20,6 +22,7 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 WORKDIR /var/www/html
 
 COPY docker/php/php.ini /usr/local/etc/php/conf.d/99-laravel.ini
+COPY docker/php/zz-pool.conf /usr/local/etc/php-fpm.d/zz-pool.conf
 COPY docker/php/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
