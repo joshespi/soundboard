@@ -2,6 +2,7 @@
 
 namespace App\Models\Concerns;
 
+use App\Models\Sound;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
@@ -25,6 +26,11 @@ trait HasStoredFile
     public function getUrlAttribute(): string
     {
         return Storage::disk('public')->url($this->file_path);
+    }
+
+    public function getIsVideoAttribute(): bool
+    {
+        return in_array(strtolower(pathinfo($this->file_path, PATHINFO_EXTENSION)), Sound::VIDEO_EXTENSIONS, true);
     }
 
     public function getImageUrlAttribute(): ?string

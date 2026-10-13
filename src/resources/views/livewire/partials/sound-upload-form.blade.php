@@ -27,9 +27,9 @@
 
     <div class="flex flex-wrap gap-x-8 gap-y-4">
         <div>
-            <x-input-label :value="__('Audio file (mp3, wav, ogg, m4a, aac — max 20MB)')" />
+            <x-input-label :value="__('Audio or video file (mp3, wav, ogg, m4a, aac, mp4, webm, m4v — max 1GB)')" />
             <div class="mt-1">
-                <x-file-input id="newSound" wireModel="newSound" accept="audio/*" :label="__('Choose audio file')" />
+                <x-file-input id="newSound" wireModel="newSound" accept="audio/*,video/mp4,video/webm,video/x-m4v" :label="__('Choose audio or video file')" />
             </div>
             <x-input-error :messages="$errors->get('newSound')" class="mt-2" />
         </div>

@@ -3,13 +3,21 @@ const CACHE = 'soundboard-v1';
 
 const CACHE_FIRST_PATHS = ['/build/', '/storage/', '/icons/'];
 
+// Episodes are huge and fetched with Range requests (which the Cache API can't store), so the
+// browser streams them straight from the server and they are never available offline.
+const VIDEO_PATH = /\.(mp4|webm|m4v)$/i;
+
 function isCacheFirst(url) {
+    if (VIDEO_PATH.test(url.pathname)) {
+        return false;
+    }
+
     return CACHE_FIRST_PATHS.some((path) => url.pathname.startsWith(path))
         || url.pathname === '/favicon.svg';
 }
 
 function isOfflinePlayablePage(url) {
-    return /^\/screens\/\d+\/play$/.test(url.pathname);
+    return /^\/screens\/\d+\/(play|sounds\/\d+\/play)$/.test(url.pathname);
 }
 
 self.addEventListener('install', () => {
@@ -55,8 +63,11 @@ self.addEventListener('fetch', (event) => {
     if (request.mode === 'navigate' && isOfflinePlayablePage(url)) {
         event.respondWith(
             fetch(request).then((response) => {
-                const copy = response.clone();
-                caches.open(CACHE).then((cache) => cache.put(request, copy));
+                // A login redirect or an error page must never stand in for the screen offline.
+                if (response.ok && !response.redirected) {
+                    const copy = response.clone();
+                    caches.open(CACHE).then((cache) => cache.put(request, copy));
+                }
 
                 return response;
             }).catch(() => caches.match(request)),

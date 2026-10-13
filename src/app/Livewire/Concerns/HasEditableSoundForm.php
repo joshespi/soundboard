@@ -16,7 +16,7 @@ use Livewire\Attributes\Validate;
  */
 trait HasEditableSoundForm
 {
-    #[Validate(Sound::AUDIO_RULES)]
+    #[Validate(Sound::MEDIA_RULES)]
     public $newSound = null;
 
     #[Validate(Sound::NAME_RULES_OPTIONAL)]

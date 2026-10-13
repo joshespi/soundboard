@@ -12,9 +12,9 @@ class ScreenPolicy
         return true;
     }
 
-    public function view(User $user, Screen $screen): bool
+    public function view(?User $user, Screen $screen): bool
     {
-        return $this->owns($user, $screen);
+        return $screen->is_public || ($user !== null && $this->owns($user, $screen));
     }
 
     public function create(User $user): bool

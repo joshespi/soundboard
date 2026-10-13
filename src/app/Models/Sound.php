@@ -18,6 +18,12 @@ class Sound extends Model
 
     const AUDIO_RULES = 'nullable|file|mimes:mp3,wav,ogg,m4a,aac|max:20480';
 
+    // Screens also take video (shows/episodes): 1 GB, streamed from the public disk, never decoded by the audio engine.
+    const MEDIA_RULES = 'nullable|file|mimes:mp3,wav,ogg,m4a,aac,mp4,webm,m4v|max:1048576';
+
+    // Extensions that make a Sound a video (is_video); keep in step with MEDIA_RULES.
+    const VIDEO_EXTENSIONS = ['mp4', 'webm', 'm4v'];
+
     const EMOJI_RULES = 'nullable|string|max:8';
 
     // Tile colour presets offered in the forms; an upload with no pick cycles through them.

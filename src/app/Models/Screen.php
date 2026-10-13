@@ -15,7 +15,22 @@ class Screen extends Model
     protected $fillable = [
         'name',
         'sort_order',
+        'is_public',
+        'image_path',
     ];
+
+    // Mirrors the column default so a freshly created model isn't null until refreshed.
+    protected $attributes = ['is_public' => false];
+
+    protected function casts(): array
+    {
+        return ['is_public' => 'boolean'];
+    }
+
+    public function getImageUrlAttribute(): ?string
+    {
+        return $this->image_path ? Storage::disk('public')->url($this->image_path) : null;
+    }
 
     public function user(): BelongsTo
     {
@@ -35,10 +50,7 @@ class Screen extends Model
     // survive pointing at files that no longer exist.
     public function deleteWithSounds(): void
     {
-        $paths = $this->sounds()
-            ->get(['file_path', 'image_path'])
-            ->flatMap(fn (Sound $sound) => array_filter([$sound->file_path, $sound->image_path]))
-            ->all();
+        $paths = $this->storedPaths();
 
         DB::transaction(function () {
             $this->sounds()->delete();
@@ -46,5 +58,16 @@ class Screen extends Model
         });
 
         Storage::disk('public')->delete($paths);
+    }
+
+    /** Every file on the public disk this screen owns: its sounds' audio/images and its own icon. */
+    public function storedPaths(): array
+    {
+        return $this->sounds()
+            ->get(['file_path', 'image_path'])
+            ->flatMap(fn (Sound $sound) => [$sound->file_path, $sound->image_path])
+            ->push($this->image_path)
+            ->filter()
+            ->all();
     }
 }
