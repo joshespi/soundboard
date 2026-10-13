@@ -305,6 +305,8 @@ function playFallback(url, onEnd) {
     const clip = trackClip(() => audio.pause(), onEnd);
 
     audio.addEventListener('ended', clip.end);
+    // A network/decode failure mid-play never fires `ended`; without this the tile stays lit.
+    audio.addEventListener('error', clip.end);
     audio.play().catch(clip.end);
 }
 
