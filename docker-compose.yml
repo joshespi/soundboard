@@ -45,7 +45,3 @@ services:
             interval: 5s
             timeout: 5s
             retries: 20
-
-volumes:
-    db_data:
-    storage_uploads:
