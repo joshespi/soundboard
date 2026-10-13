@@ -7,7 +7,7 @@ use App\Models\Sound;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -22,15 +22,20 @@ class Users extends Component
 
         abort_if($user->id === Auth::id(), 403, "You can't delete your own account here.");
 
-        DB::transaction(function () use ($user) {
-            $user->screens->each->deleteWithSounds();
+        // Screens and sounds go with the user via cascading foreign keys; files are only
+        // removed once that single delete has succeeded, so a failure never orphans rows.
+        $paths = $user->screens->flatMap->storedPaths()->all();
 
-            $user->delete();
-        });
+        $user->delete();
+
+        Storage::disk('public')->delete($paths);
     }
 
     public function render()
     {
+        // Like Content::render — a re-render (e.g. $refresh) must not keep showing a demoted admin the user list.
+        $this->ensureAdmin();
+
         $storageByUser = Cache::remember('admin.users.storage', now()->addMinutes(5), function () {
             return Sound::query()
                 ->join('screens', 'screens.id', '=', 'sounds.screen_id')

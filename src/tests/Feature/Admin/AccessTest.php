@@ -8,6 +8,7 @@ use App\Livewire\Admin\Users;
 use App\Models\LibrarySound;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
@@ -64,9 +65,8 @@ class AccessTest extends TestCase
             ->call('deleteSound', $librarySound)
             ->assertForbidden();
 
-        Livewire::actingAs($nonAdmin)->test(Users::class)
-            ->call('deleteUser', $victim)
-            ->assertForbidden();
+        // Users guards render() too (see below), so it's rejected before deleteUser is reachable.
+        Livewire::actingAs($nonAdmin)->test(Users::class)->assertForbidden();
 
         $this->assertDatabaseHas('sounds', ['id' => $sound->id]);
         $this->assertDatabaseHas('library_sounds', ['id' => $librarySound->id]);
@@ -84,5 +84,23 @@ class AccessTest extends TestCase
         $nonAdmin = User::factory()->create();
 
         Livewire::actingAs($nonAdmin)->test(Content::class)->assertForbidden();
+    }
+
+    public function test_deleting_a_user_removes_their_files(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('sounds/9/a.mp3', 'x');
+        Storage::disk('public')->put('sounds/9/screens/icon.png', 'x');
+
+        $admin = User::factory()->admin()->create();
+        $victim = User::factory()->create();
+        $screen = $victim->screens()->create(['name' => 'Screen', 'sort_order' => 0, 'image_path' => 'sounds/9/screens/icon.png']);
+        $screen->sounds()->create(['name' => 'Sound', 'file_path' => 'sounds/9/a.mp3', 'sort_order' => 0]);
+
+        Livewire::actingAs($admin)->test(Users::class)->call('deleteUser', $victim);
+
+        $this->assertDatabaseMissing('users', ['id' => $victim->id]);
+        $this->assertDatabaseMissing('sounds', ['screen_id' => $screen->id]);
+        Storage::disk('public')->assertMissing(['sounds/9/a.mp3', 'sounds/9/screens/icon.png']);
     }
 }

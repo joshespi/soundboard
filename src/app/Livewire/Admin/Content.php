@@ -37,11 +37,13 @@ class Content extends Component
         // stale snapshot) can't keep paginating this data.
         $this->ensureAdmin();
 
+        $like = '%'.addcslashes($this->search, '%_\\').'%';
+
         $sounds = Sound::query()
             ->with('screen.user')
             ->when($this->search !== '', fn ($query) => $query
-                ->where('name', 'like', '%'.$this->search.'%')
-                ->orWhereHas('screen.user', fn ($q) => $q->where('email', 'like', '%'.$this->search.'%')))
+                ->where('name', 'like', $like)
+                ->orWhereHas('screen.user', fn ($q) => $q->where('email', 'like', $like)))
             ->latest()
             ->paginate(20);
 
